@@ -7,6 +7,7 @@ import CRSGauge from '../../components/ui/CRSGauge'
 import MatchCard from '../../components/ui/MatchCard'
 import OnboardingChecklist from '../../components/ui/OnboardingChecklist'
 import MatchPreview from '../../components/ui/MatchPreview'
+import VerificationBanner from '../../components/ui/VerificationBanner'
 
 export default function EntDashboard() {
   const user = useSelector(selectUser)

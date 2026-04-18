@@ -11,6 +11,7 @@ export default function Login() {
     defaultValues: { remember: false }
   })
   const [serverError, setServerError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [params]  = useSearchParams()
   const dispatch  = useDispatch()
   const navigate  = useNavigate()
@@ -19,11 +20,7 @@ export default function Login() {
     mutationFn: ({ email, password, remember }) =>
       api.post('/auth/login', { email, password, remember }),
     onSuccess: ({ data }, variables) => {
-      dispatch(setCredentials({
-        user:     data.user,
-        token:    data.token,
-        remember: variables.remember,
-      }))
+      dispatch(setCredentials({ user: data.user, token: data.token, remember: variables.remember }))
       navigate('/dashboard')
     },
     onError: (err) => {
@@ -33,8 +30,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[#000D1A] flex flex-col">
-
-      {/* Nav */}
       <nav className="flex items-center justify-between px-8 h-14 border-b border-pyre-gold/20">
         <Link to="/" className="font-display font-bold text-lg tracking-wide">
           CAPITAL <span className="text-pyre-gold">PYRE</span>
@@ -46,16 +41,20 @@ export default function Login() {
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm">
-
           <div className="mb-8">
             <h1 className="font-display font-bold text-2xl text-white mb-1">Welcome back</h1>
             <p className="text-sm text-pyre-muted">Sign in to your Capital Pyre account</p>
           </div>
 
-          {/* Reset success banner */}
           {params.get('reset') && (
             <div className="bg-green-900/30 border border-green-500/30 rounded-lg px-4 py-3 text-sm text-green-300 mb-5">
               Password updated successfully. Please sign in.
+            </div>
+          )}
+
+          {params.get('verified') && (
+            <div className="bg-green-900/30 border border-green-500/30 rounded-lg px-4 py-3 text-sm text-green-300 mb-5">
+              Email verified successfully. You can now sign in.
             </div>
           )}
 
@@ -65,10 +64,7 @@ export default function Login() {
             </div>
           )}
 
-          <form
-            onSubmit={handleSubmit(d => { setServerError(''); login.mutate(d) })}
-            className="space-y-4"
-          >
+          <form onSubmit={handleSubmit(d => { setServerError(''); login.mutate(d) })} className="space-y-4">
             <div className="form-group">
               <label className="label">Email address</label>
               <input
@@ -88,25 +84,28 @@ export default function Login() {
                   Forgot password?
                 </Link>
               </div>
-              <input
-                {...register('password', { required: 'Password is required' })}
-                type="password"
-                autoComplete="current-password"
-                className="input"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  {...register('password', { required: 'Password is required' })}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  className="input pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-pyre-muted hover:text-white transition-colors text-xs"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
               {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>}
             </div>
 
-            {/* ── Remember Me ─────────────────────────── */}
             <label className="flex items-center gap-3 cursor-pointer group select-none">
               <div className="relative">
-                <input
-                  {...register('remember')}
-                  type="checkbox"
-                  className="sr-only peer"
-                />
-                {/* Custom toggle */}
+                <input {...register('remember')} type="checkbox" className="sr-only peer" />
                 <div className="w-9 h-5 rounded-full bg-pyre-input border border-pyre-gold/20
                                 peer-checked:bg-pyre-gold/80 peer-checked:border-pyre-gold
                                 transition-all duration-200" />
@@ -115,31 +114,20 @@ export default function Login() {
                                 transition-all duration-200" />
               </div>
               <div>
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  Remember me
-                </span>
-                <p className="text-[10px] text-pyre-muted leading-tight">
-                  Stay signed in for 30 days
-                </p>
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">Remember me</span>
+                <p className="text-[10px] text-pyre-muted leading-tight">Stay signed in for 30 days</p>
               </div>
             </label>
 
-            <button
-              type="submit"
-              disabled={login.isPending}
-              className="btn-primary w-full mt-2"
-            >
+            <button type="submit" disabled={login.isPending} className="btn-primary w-full mt-2">
               {login.isPending ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
 
           <p className="text-center text-xs text-pyre-muted mt-6">
             Don't have an account?{' '}
-            <Link to="/register" className="text-pyre-gold hover:underline font-medium">
-              Register
-            </Link>
+            <Link to="/register" className="text-pyre-gold hover:underline font-medium">Register</Link>
           </p>
-
         </div>
       </div>
     </div>

@@ -1,21 +1,12 @@
 {
   "name": "capitalpyre",
-  "version": "1.0.0",
-  "description": "Capital Pyre — Where capital ignites. Full-stack monorepo.",
-  "private": true,
-  "workspaces": [
-    "backend",
-    "frontend"
-  ],
+  "version": "2.0.0",
+  "description": "Where capital ignites — full-stack investor-entrepreneur capital network for Botswana",
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\" \"npm run dev --workspace=scoring\"",
-    "dev:backend": "npm run dev --workspace=backend",
-    "dev:frontend": "npm run dev --workspace=frontend",
-    "db:init": "npm run db:init --workspace=backend",
-    "docker:up": "docker-compose up --build",
-    "docker:down": "docker-compose down"
+    "backend":      "cd backend && npm run dev",
+    "frontend":     "cd frontend && npm run dev",
+    "reset-admin":  "node scripts/reset_admin.js",
+    "db:init":      "cd backend && npm run db:init"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  }
+  "workspaces": ["backend", "frontend"]
 }

@@ -1,31 +1,31 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import api from '../../utils/api'
 import CRSGauge from '../../components/ui/CRSGauge'
 
 const SECTORS   = ['Technology','Agriculture','Health','Education','Finance','Retail','Energy','Manufacturing','Tourism','Other']
 const STAGES    = ['idea','pre-seed','seed','series-a','growth']
 const TIMELINES = [
-  { value: 'immediate',   label: 'Immediately'       },
-  { value: '1-3months',   label: 'Within 1–3 months'  },
-  { value: '3-6months',   label: 'Within 3–6 months'  },
-  { value: '6-12months',  label: 'Within 6–12 months' },
-  { value: 'exploring',   label: 'Just exploring'     },
+  { value: 'immediate',  label: 'Immediately'       },
+  { value: '1-3months',  label: 'Within 1–3 months' },
+  { value: '3-6months',  label: 'Within 3–6 months' },
+  { value: '6-12months', label: 'Within 6–12 months'},
+  { value: 'exploring',  label: 'Just exploring'    },
 ]
+const MAX = { financial_health: 25, governance: 20, track_record: 20, documentation: 20, pitch_quality: 15 }
 
 export default function EntProfile() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const { register, handleSubmit, reset, formState: { isDirty } } = useForm()
+  const [showBreakdown, setShowBreakdown] = useState(false)
+  const [crsResult,     setCrsResult]     = useState(null)
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['ent-profile'],
     queryFn: () => api.get('/entrepreneurs/me').then(r => r.data.data),
-  })
-
-  const { data: crsData } = useQuery({
-    queryKey: ['crs-me'],
-    queryFn: () => api.get('/crs/me').then(r => r.data.data),
   })
 
   const { data: benchmarks } = useQuery({
@@ -37,12 +37,16 @@ export default function EntProfile() {
 
   const save = useMutation({
     mutationFn: (data) => api.put('/entrepreneurs/me', data),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['ent-profile'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ent-profile'] })
+      navigate('/entrepreneur/dashboard')
+    },
   })
 
   const computeCRS = useMutation({
     mutationFn: () => api.post('/crs/compute'),
-    onSuccess:  (res) => {
+    onSuccess: (res) => {
+      setCrsResult(res.data)
       qc.invalidateQueries({ queryKey: ['ent-profile'] })
       qc.invalidateQueries({ queryKey: ['crs-me'] })
     },
@@ -55,8 +59,8 @@ export default function EntProfile() {
 
   if (isLoading) return <p className="text-pyre-muted text-sm">Loading profile…</p>
 
-  // Surface tips from last compute or crsData
-  const tips = computeCRS.data?.data?.tips || []
+  const tips      = crsResult?.tips || []
+  const breakdown = crsResult?.breakdown || profile?.crs_breakdown || {}
 
   return (
     <div className="space-y-6 page-enter max-w-4xl">
@@ -69,11 +73,8 @@ export default function EntProfile() {
           <span className={`badge ${profile?.is_published ? 'badge-green' : 'badge-gray'}`}>
             {profile?.is_published ? 'Published' : 'Draft'}
           </span>
-          <button
-            onClick={() => publish.mutate()}
-            disabled={publish.isPending}
-            className={profile?.is_published ? 'btn-ghost text-xs' : 'btn-secondary text-xs'}
-          >
+          <button onClick={() => publish.mutate()} disabled={publish.isPending}
+            className={profile?.is_published ? 'btn-ghost text-xs' : 'btn-secondary text-xs'}>
             {profile?.is_published ? 'Unpublish' : 'Publish to Investors'}
           </button>
         </div>
@@ -90,36 +91,55 @@ export default function EntProfile() {
         <div className="card flex flex-col items-center gap-4">
           <CRSGauge score={profile?.crs_score || 0} size={130} />
 
-          {/* Benchmark comparison */}
           {benchmarks?.avg_crs && (
             <div className="w-full text-center">
               <p className="text-[10px] text-pyre-muted">Platform average</p>
               <p className="text-xs text-white font-semibold">{Math.round(benchmarks.avg_crs)}/100</p>
               <p className={`text-[10px] mt-0.5 ${profile?.crs_score >= benchmarks.avg_crs ? 'text-green-400' : 'text-pyre-gold'}`}>
-                {profile?.crs_score >= benchmarks.avg_crs ? 'Above average' : 'Below average — see tips below'}
+                {profile?.crs_score >= benchmarks.avg_crs ? 'Above average' : 'Below average'}
               </p>
             </div>
           )}
 
-          {/* Dimension breakdown */}
-          {profile?.crs_breakdown && (
-            <div className="w-full space-y-1.5">
-              {Object.entries(profile.crs_breakdown).map(([k, v]) => (
-                <div key={k} className="flex justify-between text-xs">
-                  <span className="text-pyre-muted capitalize">{k.replace(/_/g, ' ')}</span>
-                  <span className="text-white font-medium">{v}</span>
-                </div>
-              ))}
+          {/* Score breakdown toggle */}
+          {Object.keys(breakdown).length > 0 && (
+            <button onClick={() => setShowBreakdown(s => !s)}
+              className="btn-ghost text-xs py-1.5 w-full">
+              {showBreakdown ? 'Hide breakdown ▲' : 'View score breakdown ▼'}
+            </button>
+          )}
+
+          {showBreakdown && (
+            <div className="w-full space-y-2">
+              {Object.entries(breakdown).map(([k, v]) => {
+                const max = MAX[k] || 20
+                const pct = Math.round((v / max) * 100)
+                const color = pct >= 70 ? 'bg-green-500' : pct >= 40 ? 'bg-pyre-gold' : 'bg-red-500'
+                return (
+                  <div key={k}>
+                    <div className="flex justify-between text-[10px] mb-1">
+                      <span className="text-pyre-muted capitalize">{k.replace(/_/g,' ')}</span>
+                      <span className="text-white">{v}/{max}</span>
+                    </div>
+                    <div className="h-1.5 bg-pyre-input rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
 
-          <button
-            onClick={() => computeCRS.mutate()}
-            disabled={computeCRS.isPending}
-            className="btn-secondary text-xs py-1.5 w-full"
-          >
+          <button onClick={() => computeCRS.mutate()} disabled={computeCRS.isPending}
+            className="btn-secondary text-xs py-1.5 w-full">
             {computeCRS.isPending ? 'Computing…' : 'Recompute Score'}
           </button>
+
+          {computeCRS.isError && (
+            <p className="text-xs text-red-400 text-center">
+              {computeCRS.error?.response?.data?.message || 'Scoring service unavailable. Start the Python service on port 8000.'}
+            </p>
+          )}
         </div>
 
         {/* Profile form */}
@@ -158,7 +178,7 @@ export default function EntProfile() {
                 <input {...register('funding_ask')} type="number" className="input" placeholder="500000" />
               </div>
               <div className="form-group">
-                <label className="label">Funding timeline <span className="text-pyre-gold">commitment signal</span></label>
+                <label className="label">Funding timeline <span className="text-pyre-gold text-[10px]">commitment signal</span></label>
                 <select {...register('funding_timeline')} className="input">
                   {TIMELINES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
@@ -173,6 +193,13 @@ export default function EntProfile() {
             <div className="form-group">
               <label className="label">Pitch summary <span className="text-pyre-gold text-[10px]">↑ CRS</span></label>
               <textarea {...register('pitch_summary')} rows={3} className="input" placeholder="One paragraph that captures your venture…" />
+            </div>
+
+            {/* Pitch video */}
+            <div className="form-group">
+              <label className="label">Pitch video URL <span className="text-pyre-muted text-[10px]">optional</span></label>
+              <input {...register('pitch_video_url')} className="input" placeholder="https://youtube.com/watch?v=..." />
+              <p className="text-[10px] text-pyre-muted mt-1">YouTube, Vimeo, or Loom link. Shown to matched investors.</p>
             </div>
 
             <div className="form-group">
@@ -199,11 +226,13 @@ export default function EntProfile() {
               <button type="submit" disabled={save.isPending || !isDirty} className="btn-primary">
                 {save.isPending ? 'Saving…' : 'Save profile'}
               </button>
+              <button type="button" onClick={() => navigate('/entrepreneur/dashboard')} className="btn-ghost">
+                Cancel
+              </button>
               {save.isSuccess && <span className="text-xs text-green-400 self-center">Saved ✓</span>}
             </div>
           </form>
 
-          {/* Tips panel — shown after CRS compute */}
           {tips.length > 0 && (
             <div className="card border-pyre-gold/30 bg-pyre-gold/5">
               <p className="text-xs font-semibold text-pyre-gold mb-2">How to improve your score</p>

@@ -24,6 +24,7 @@ import EntLogbooks   from './pages/entrepreneur/Logbooks'
 import SmeDashboard  from './pages/sme/Dashboard'
 import SmeProfile    from './pages/sme/Profile'
 import SmeCRS        from './pages/sme/CRSReport'
+import SmeDocuments  from './pages/sme/Documents'
 
 // Investor pages
 import InvDashboard  from './pages/investor/Dashboard'
@@ -38,6 +39,7 @@ import AdminUsers     from './pages/admin/Users'
 import AdminSMEQueue  from './pages/admin/SMEQueue'
 import AdminBonds     from './pages/admin/Bonds'
 import AdminAnalytics from './pages/admin/Analytics'
+import AdminProfile  from './pages/admin/Profile'
 import AdminAuditLogs from './pages/admin/AuditLogs'
 
 // Shared pages
@@ -106,6 +108,7 @@ export default function App() {
           <Route path="dashboard" element={<SmeDashboard />} />
           <Route path="profile"   element={<SmeProfile />} />
           <Route path="crs"       element={<SmeCRS />} />
+          <Route path="documents" element={<SmeDocuments />} />
           <Route path="deals/:id" element={<DealRoom />} />
           <Route path="messages"  element={<Messages />} />
           <Route path="notifications" element={<Notifications />} />
@@ -130,6 +133,7 @@ export default function App() {
           <Route path="sme-queue"  element={<AdminSMEQueue />} />
           <Route path="bonds"      element={<AdminBonds />} />
           <Route path="analytics"  element={<AdminAnalytics />} />
+          <Route path="profile"    element={<AdminProfile />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
         </Route>
 

@@ -18,6 +18,7 @@ const NAV = {
     { to: '/sme/dashboard', label: 'Dashboard',       icon: '▦' },
     { to: '/sme/profile',   label: 'SME Profile',     icon: '◈' },
     { to: '/sme/crs',       label: 'Readiness Score', icon: '⚡' },
+    { to: '/sme/documents', label: 'Documents',       icon: '📄' },
     { to: '/sme/messages',  label: 'Messages',        icon: '✉' },
   ],
   investor: [
@@ -35,6 +36,7 @@ const NAV = {
     { to: '/admin/bonds',      label: 'Bond Pools',  icon: '◈' },
     { to: '/admin/analytics',  label: 'Analytics',   icon: '▲' },
     { to: '/admin/audit-logs', label: 'Audit Logs',  icon: '◎' },
+    { to: '/admin/profile',    label: 'My Profile',  icon: '◈' },
   ],
 }
 

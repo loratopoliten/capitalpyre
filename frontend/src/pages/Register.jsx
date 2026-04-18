@@ -16,9 +16,12 @@ export default function Register() {
   const [params]  = useSearchParams()
   const [role, setRole] = useState(params.get('role') || 'entrepreneur')
   const [serverError, setServerError] = useState('')
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm,  setShowConfirm]  = useState(false)
+  const { register, handleSubmit, watch, formState: { errors } } = useForm()
   const dispatch  = useDispatch()
   const navigate  = useNavigate()
+  const password  = watch('password')
 
   const reg = useMutation({
     mutationFn: (data) => api.post('/auth/register', { ...data, role }),
@@ -49,6 +52,12 @@ export default function Register() {
             <p className="text-sm text-pyre-muted">Join Capital Pyre and ignite your next chapter</p>
           </div>
 
+          {serverError && (
+            <div className="bg-red-900/30 border border-red-500/30 rounded-lg px-4 py-3 text-sm text-red-300 mb-5">
+              {serverError}
+            </div>
+          )}
+
           {/* Role selector */}
           <div className="grid grid-cols-3 gap-2 mb-6">
             {ROLES.map(r => (
@@ -56,34 +65,27 @@ export default function Register() {
                 key={r.value}
                 type="button"
                 onClick={() => setRole(r.value)}
-                className={`p-3 rounded-lg border text-left transition-all ${
-                  role === r.value
+                className={`p-3 rounded-lg border text-left transition-all
+                  ${role === r.value
                     ? 'border-pyre-gold bg-pyre-gold/10 text-white'
-                    : 'border-pyre-gold/20 bg-pyre-card text-pyre-muted hover:border-pyre-gold/40'
-                }`}
+                    : 'border-pyre-gold/20 text-pyre-muted hover:border-pyre-gold/40'}`}
               >
-                <p className="text-xs font-semibold">{r.label}</p>
-                <p className="text-[10px] mt-0.5 leading-tight opacity-80">{r.desc}</p>
+                <p className="text-xs font-semibold mb-0.5">{r.label}</p>
+                <p className="text-[10px] leading-tight">{r.desc}</p>
               </button>
             ))}
           </div>
 
-          {serverError && (
-            <div className="bg-red-900/30 border border-red-500/30 rounded-lg px-4 py-3 text-sm text-red-300 mb-5">
-              {serverError}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit(d => { setServerError(''); reg.mutate(d) })} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="form-group mb-0">
+              <div className="form-group">
                 <label className="label">First name</label>
                 <input {...register('firstname', { required: 'Required' })} className="input" placeholder="Kagiso" />
                 {errors.firstname && <p className="text-xs text-red-400 mt-1">{errors.firstname.message}</p>}
               </div>
-              <div className="form-group mb-0">
+              <div className="form-group">
                 <label className="label">Last name</label>
-                <input {...register('lastname', { required: 'Required' })} className="input" placeholder="Molefe" />
+                <input {...register('lastname', { required: 'Required' })} className="input" placeholder="Mokoena" />
                 {errors.lastname && <p className="text-xs text-red-400 mt-1">{errors.lastname.message}</p>}
               </div>
             </div>
@@ -91,56 +93,72 @@ export default function Register() {
             <div className="form-group">
               <label className="label">Email address</label>
               <input
-                {...register('email', { required: 'Email is required' })}
-                type="email" className="input" placeholder="you@example.com"
+                {...register('email', { required: 'Email is required', pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email' } })}
+                type="email"
+                autoComplete="email"
+                className="input"
+                placeholder="you@example.com"
               />
               {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
             </div>
 
-            <div className="form-group">
-              <label className="label">Password</label>
-              <input
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: { value: 8, message: 'Must be at least 8 characters' },
-                  pattern:   { value: /(?=.*[A-Z])(?=.*[0-9])/, message: 'Must include an uppercase letter and a number' },
-                })}
-                type="password" className="input" placeholder="Min. 8 chars, 1 uppercase, 1 number"
-              />
-              {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>}
-            </div>
-
-            {/* Role-specific extra fields */}
             {(role === 'entrepreneur' || role === 'sme') && (
               <div className="form-group">
                 <label className="label">Business name</label>
-                <input {...register('business_name')} className="input" placeholder="My Ventures (Pty) Ltd" />
+                <input {...register('business_name')} className="input" placeholder="My Venture" />
               </div>
             )}
 
-            {role === 'investor' && (
-              <div className="form-group">
-                <label className="label">Investor type</label>
-                <select {...register('investor_type')} className="input">
-                  <option value="angel">Angel Investor</option>
-                  <option value="vc">Venture Capital</option>
-                  <option value="institutional">Institutional</option>
-                  <option value="corporate">Corporate</option>
-                </select>
+            <div className="form-group">
+              <label className="label">Password</label>
+              <div className="relative">
+                <input
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: { value: 8, message: 'Minimum 8 characters' },
+                    pattern: { value: /(?=.*[A-Z])(?=.*[0-9])/, message: 'Must contain uppercase and a number' }
+                  })}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  className="input pr-10"
+                  placeholder="••••••••"
+                />
+                <button type="button" onClick={() => setShowPassword(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-pyre-muted hover:text-white transition-colors text-xs">
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
               </div>
-            )}
+              {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>}
+            </div>
 
-            <button
-              type="submit"
-              disabled={reg.isPending}
-              className="btn-primary w-full mt-2"
-            >
+            <div className="form-group">
+              <label className="label">Confirm password</label>
+              <div className="relative">
+                <input
+                  {...register('confirmPassword', {
+                    required: 'Please confirm your password',
+                    validate: v => v === password || 'Passwords do not match'
+                  })}
+                  type={showConfirm ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  className="input pr-10"
+                  placeholder="••••••••"
+                />
+                <button type="button" onClick={() => setShowConfirm(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-pyre-muted hover:text-white transition-colors text-xs">
+                  {showConfirm ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-xs text-red-400 mt-1">{errors.confirmPassword.message}</p>}
+            </div>
+
+            <button type="submit" disabled={reg.isPending} className="btn-primary w-full mt-2">
               {reg.isPending ? 'Creating account…' : 'Create account'}
             </button>
           </form>
 
           <p className="text-center text-xs text-pyre-muted mt-6">
-            Already registered?{' '}
+            Already have an account?{' '}
             <Link to="/login" className="text-pyre-gold hover:underline font-medium">Sign in</Link>
           </p>
         </div>
